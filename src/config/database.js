@@ -15,14 +15,18 @@ const sequelize = new Sequelize(dbName, dbUser, dbPass, {
 
 const connectDB = async () => {
   try {
-    // 1. Connect without database selected to create it if not exists
-    const rawSequelize = new Sequelize('', dbUser, dbPass, {
-      host: dbHost,
-      dialect: 'mysql',
-      logging: false,
-    });
-    await rawSequelize.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
-    await rawSequelize.close();
+    // 1. Try to create the database if it doesn't exist (May fail in cloud environments due to permissions, which is fine if DB already exists)
+    try {
+      const rawSequelize = new Sequelize('', dbUser, dbPass, {
+        host: dbHost,
+        dialect: 'mysql',
+        logging: false,
+      });
+      await rawSequelize.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+      await rawSequelize.close();
+    } catch (createError) {
+      console.log('Skipped database creation (likely already exists or no permission in cloud):', createError.message);
+    }
 
     // 2. Authenticate main connection
     await sequelize.authenticate();
